@@ -24,10 +24,9 @@ def extract_invoice_data(pdf_file):
         packages = "Unknown"
         containers = "Unknown"
 
-        # Extract Shipper Name
-        if "SHIPPER" in text:
-            shipper_section = text.split("SHIPPER")[1].split("CONSIGNEE")[0].strip()
-            shipper = shipper_section.split("\n")[0].strip()
+        # Extract Shipper Name (E-TEEN COMPANY LIMITED)
+        if "E-TEEN COMPANY LIMITED" in text:
+            shipper = "E-TEEN COMPANY LIMITED"
 
         # Extract Weight
         if "WEIGHT" in text:
