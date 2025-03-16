@@ -80,6 +80,8 @@ def extract_invoice_data(pdf_file):
             if "Total USD" in line:
                 # Extract the amount from this line by splitting at "Total USD" and cleaning up the value
                 amount = line.split("Total USD")[-1].strip()
+                # Remove any non-numeric characters (keep digits and decimal points)
+                amount = ''.join(filter(lambda x: x.isdigit() or x == '.', amount))
                 break
 
         return {
