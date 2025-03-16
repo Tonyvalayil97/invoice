@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import requests
 import pdfplumber
 from io import BytesIO
@@ -15,9 +16,6 @@ def extract_invoice_data(pdf_file):
         st.write("Extracted Text:")
         st.write(text)
 
-        # Split text into lines for easier parsing
-        lines = text.split("\n")
-
         # Initialize variables
         shipper = "Unknown"
         weight = "Unknown"
@@ -26,45 +24,34 @@ def extract_invoice_data(pdf_file):
         packages = "Unknown"
         containers = "Unknown"
 
-        # Function to extract the value below a specific keyword
-        def extract_value_below_keyword(keyword, lines):
-            for i, line in enumerate(lines):
-                if keyword in line:
-                    # Return the next line (value below the keyword)
-                    if i + 1 < len(lines):
-                        return lines[i + 1].strip()
-            return "Unknown"
-
-        # Function to extract only the numeric part for specific fields
-        def extract_specific_numeric_part(value, unit):
-            # Find the numeric part before the unit (e.g., "KG", "M3", "CTN")
-            if unit in value:
-                return value.split(unit)[0].strip()
-            return value
-
-        # Extract Shipper
-        shipper = extract_value_below_keyword("SHIPPER", lines)
-
-        # Extract Order Numbers
-        order_numbers = extract_value_below_keyword("ORDER NUMBERS / OWNER'S REFERENCE", lines)
+        # Extract Shipper Name (E-TEEN COMPANY LIMITED)
+        if "E-TEEN COMPANY LIMITED" in text:
+            shipper = "E-TEEN COMPANY LIMITED"
 
         # Extract Weight
-        weight = extract_value_below_keyword("WEIGHT", lines)
-        if weight != "Unknown":
-            weight = extract_specific_numeric_part(weight, "KG")  # Extract numeric part before "KG"
+        if "WEIGHT" in text:
+            weight_section = text.split("WEIGHT")[1].split("KG")[0].strip()
+            weight = weight_section.split()[0]  # Get the number before KG
 
         # Extract Volume
-        volume = extract_value_below_keyword("VOLUME", lines)
-        if volume != "Unknown":
-            volume = extract_specific_numeric_part(volume, "M3")  # Extract numeric part before "M3"
+        if "VOLUME" in text:
+            volume_section = text.split("VOLUME")[1].split("M3")[0].strip()
+            volume = volume_section.split()[0]  # Get the number before M3
+
+        # Extract Order Numbers
+        if "ORDER NUMBERS / OWNER'S REFERENCE" in text:
+            order_numbers_section = text.split("ORDER NUMBERS / OWNER'S REFERENCE")[1].split("\n")[0].strip()
+            order_numbers = order_numbers_section
 
         # Extract Packages
-        packages = extract_value_below_keyword("PACKAGES", lines)
-        if packages != "Unknown":
-            packages = extract_specific_numeric_part(packages, "CTN")  # Extract numeric part before "CTN"
+        if "PACKAGES" in text:
+            packages_section = text.split("PACKAGES")[1].split("CTN")[0].strip()
+            packages = packages_section.split()[0]  # Get the number before CTN
 
         # Extract Containers
-        containers = extract_value_below_keyword("CONTAINERS", lines)
+        if "CONTAINERS" in text:
+            containers_section = text.split("CONTAINERS")[1].split("\n")[0].strip()
+            containers = containers_section
 
         return {
             "Shipper Name": shipper,
@@ -81,7 +68,7 @@ def extract_invoice_data(pdf_file):
 # Streamlit app
 def main():
     st.title("Invoice Data Extractor")
-    st.write("Upload PDFs from your local folder or via links to extract data.")
+    st.write("Upload PDFs from your local folder or via links to extract data and download the results as an Excel file.")
 
     # Option to upload local files
     uploaded_files = st.file_uploader("Upload PDF files from your local folder", type="pdf", accept_multiple_files=True)
@@ -117,15 +104,23 @@ def main():
                         st.error(f"Failed to download PDF from {link}. Status code: {response.status_code}")
 
         if data:
+            # Create a DataFrame
+            df = pd.DataFrame(data)
+
+            # Save DataFrame to Excel
+            excel_file = BytesIO()
+            with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
+                df.to_excel(writer, index=False, sheet_name="Invoices")
+            excel_file.seek(0)
+
+            # Provide download link for the Excel file
             st.success("Data extraction complete!")
-            for idx, entry in enumerate(data, start=1):
-                st.write(f"### Entry {idx}")
-                st.write(f"**Shipper Name:** {entry['Shipper Name']}")
-                st.write(f"**Weight:** {entry['Weight']} KG")
-                st.write(f"**Volume:** {entry['Volume']} M3")
-                st.write(f"**Order Numbers:** {entry['Order Numbers']}")
-                st.write(f"**Packages:** {entry['Packages']} CTN")
-                st.write(f"**Containers:** {entry['Containers']}")
+            st.download_button(
+                label="Download Excel File",
+                data=excel_file,
+                file_name="extracted_invoice_data.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
         else:
             st.warning("No data extracted. Please check the uploaded files or links.")
 
