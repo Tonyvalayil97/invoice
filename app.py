@@ -20,17 +20,14 @@ def extract_invoice_data(pdf_file):
         shipper = "Unknown"
         weight = "Unknown"
         volume = "Unknown"
-        final_amount = "Unknown"
-        invoice_number = "Unknown"
+        order_numbers = "Unknown"
+        packages = "Unknown"
+        containers = "Unknown"
 
-        # Extract Shipper
+        # Extract Shipper Name
         if "SHIPPER" in text:
             shipper_section = text.split("SHIPPER")[1].split("\n")[0].strip()
             shipper = shipper_section.split("CONSIGNEE")[0].strip()
-
-        # Extract Invoice Number
-        if "INVOICE -" in text:
-            invoice_number = text.split("INVOICE -")[1].split("\n")[0].strip()
 
         # Extract Weight
         if "WEIGHT" in text:
@@ -42,17 +39,28 @@ def extract_invoice_data(pdf_file):
             volume_section = text.split("VOLUME")[1].split("\n")[0].strip()
             volume = volume_section.split("M3")[0].strip()
 
-        # Extract Final Amount
-        if "TOTAL CHARGES" in text:
-            final_amount_section = text.split("TOTAL CHARGES")[1].split("\n")[0].strip()
-            final_amount = final_amount_section.split("USD")[0].strip()
+        # Extract Order Numbers
+        if "ORDER NUMBERS / OWNER'S REFERENCE" in text:
+            order_numbers_section = text.split("ORDER NUMBERS / OWNER'S REFERENCE")[1].split("\n")[0].strip()
+            order_numbers = order_numbers_section
+
+        # Extract Packages
+        if "PACKAGES" in text:
+            packages_section = text.split("PACKAGES")[1].split("\n")[0].strip()
+            packages = packages_section.split("CTN")[0].strip()
+
+        # Extract Containers
+        if "CONTATNERS" in text:
+            containers_section = text.split("CONTATNERS")[1].split("\n")[0].strip()
+            containers = containers_section
 
         return {
-            "Shipper": shipper,
+            "Shipper Name": shipper,
             "Weight": weight,
             "Volume": volume,
-            "Final Amount": final_amount,
-            "Invoice Number": invoice_number,
+            "Order Numbers": order_numbers,
+            "Packages": packages,
+            "Containers": containers,
         }
     except Exception as e:
         st.error(f"Error reading PDF: {e}")
