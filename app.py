@@ -3,6 +3,7 @@ import requests
 import pdfplumber
 from io import BytesIO
 import re
+import pandas as pd
 
 # Function to extract data from a PDF invoice
 def extract_invoice_data(pdf_file):
@@ -29,8 +30,6 @@ def extract_invoice_data(pdf_file):
         weight = "Unknown"
         order_number = "Unknown"
         container_number = "Unknown"
-        invoice_number = "Unknown"
-        amount = "Unknown"
 
         # Function to extract the value below a specific keyword
         def extract_value_below_keyword(keyword, lines):
@@ -50,14 +49,6 @@ def extract_invoice_data(pdf_file):
                 return ''.join(filter(lambda x: x.isdigit() or x == '.', part_before_unit))
             return value
 
-        # Function to extract invoice number starting with "SY:"
-        def extract_sy_invoice_number(lines):
-            for line in lines:
-                match = re.search(r'SY:\s*(\d+)', line)
-                if match:
-                    return match.group(1)
-            return "Unknown"
-
         # Extract Shipper Name from page 1
         shipper = extract_value_below_keyword("SHIPPER", lines_page_1)
 
@@ -67,30 +58,16 @@ def extract_invoice_data(pdf_file):
         # Extract Container Number from page 1
         container_number = extract_value_below_keyword("CONTAINERS", lines_page_1)
 
-        # Extract Invoice Number from page 1
-        invoice_number = extract_sy_invoice_number(lines_page_1)
-
         # Extract Weight (numeric value before "KG") from page 1
         weight = extract_value_below_keyword("WEIGHT", lines_page_1)
         if weight != "Unknown":
             weight = extract_numeric_before_unit(weight, "KG")
-
-        # Extract Amount from page 2 next to "Total USD"
-        for line in lines_page_2:
-            if "Total USD" in line:
-                # Extract the amount from this line by splitting at "Total USD" and cleaning up the value
-                amount = line.split("Total USD")[-1].strip()
-                # Remove any non-numeric characters (keep digits and decimal points)
-                amount = ''.join(filter(lambda x: x.isdigit() or x == '.', amount))
-                break
 
         return {
             "Shipper Name": shipper,
             "Weight": weight,
             "Order Number": order_number,
             "Container Number": container_number,
-            "Invoice Number": invoice_number,
-            "Amount": amount,
         }
     except Exception as e:
         st.error(f"Error reading PDF: {e}")
@@ -136,14 +113,25 @@ def main():
 
         if data:
             st.success("Data extraction complete!")
-            for idx, entry in enumerate(data, start=1):
-                st.write(f"### Entry {idx}")
-                st.write(f"**Shipper Name:** {entry['Shipper Name']}")
-                st.write(f"**Weight:** {entry['Weight']} KG")
-                st.write(f"**Order Number:** {entry['Order Number']}")
-                st.write(f"**Container Number:** {entry['Container Number']}")
-                st.write(f"**Invoice Number:** {entry['Invoice Number']}")
-                st.write(f"**Amount:** {entry['Amount']} USD")
+            
+            # Create a DataFrame from the extracted data
+            df = pd.DataFrame(data)
+            
+            # Display the DataFrame in the app
+            st.write(df)
+            
+            # Provide a download button for the Excel file
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df.to_excel(writer, index=False, sheet_name='Sheet1')
+            output.seek(0)
+            
+            st.download_button(
+                label="Download Excel file",
+                data=output,
+                file_name="extracted_data.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
         else:
             st.warning("No data extracted. Please check the uploaded files or links.")
 
