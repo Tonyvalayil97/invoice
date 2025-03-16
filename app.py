@@ -3,16 +3,20 @@ import requests
 import pdfplumber
 from io import BytesIO
 
-# Function to extract data from a PDF invoice
+# Function to extract data from a PDF invoice (specific to page 3)
 def extract_invoice_data(pdf_file):
     try:
         with pdfplumber.open(pdf_file) as pdf:
-            text = ""
-            for page in pdf.pages:
-                text += page.extract_text()
+            # Extract text from page 3 (index 2 since pages are zero-indexed)
+            if len(pdf.pages) >= 3:  # Ensure the PDF has at least 3 pages
+                page = pdf.pages[2]  # Page 3 is index 2
+                text = page.extract_text()
+            else:
+                st.error("The PDF does not have a third page.")
+                return None
 
         # Debug: Print the extracted text
-        st.write("Extracted Text:")
+        st.write("Extracted Text from Page 3:")
         st.write(text)
 
         # Split text into lines for easier parsing
@@ -81,7 +85,7 @@ def extract_invoice_data(pdf_file):
 # Streamlit app
 def main():
     st.title("Invoice Data Extractor")
-    st.write("Upload PDFs from your local folder or via links to extract data.")
+    st.write("Upload PDFs from your local folder or via links to extract data from page 3.")
 
     # Option to upload local files
     uploaded_files = st.file_uploader("Upload PDF files from your local folder", type="pdf", accept_multiple_files=True)
