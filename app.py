@@ -11,20 +11,16 @@ def extract_invoice_data(pdf_file):
             for page in pdf.pages:
                 text += page.extract_text()
 
-        # Debug: Print the extracted text
-        st.write("Extracted Text:")
-        st.write(text)
-
         # Split text into lines for easier parsing
         lines = text.split("\n")
 
         # Initialize variables
         shipper = "Unknown"
         weight = "Unknown"
-        volume = "Unknown"
-        order_numbers = "Unknown"
-        packages = "Unknown"
-        containers = "Unknown"
+        order_number = "Unknown"
+        container_number = "Unknown"
+        invoice_number = "Unknown"
+        amount = "Unknown"
 
         # Function to extract the value below a specific keyword
         def extract_value_below_keyword(keyword, lines):
@@ -44,37 +40,33 @@ def extract_invoice_data(pdf_file):
                 return ''.join(filter(lambda x: x.isdigit() or x == '.', part_before_unit))
             return value
 
-        # Extract Shipper
+        # Extract Shipper Name
         shipper = extract_value_below_keyword("SHIPPER", lines)
 
-        # Extract Order Numbers
-        order_numbers = extract_value_below_keyword("ORDER NUMBERS / OWNER'S REFERENCE", lines)
+        # Extract Order Number
+        order_number = extract_value_below_keyword("ORDER NUMBER", lines)
+
+        # Extract Container Number
+        container_number = extract_value_below_keyword("CONTAINER NO", lines)
+
+        # Extract Invoice Number
+        invoice_number = extract_value_below_keyword("INVOICE NO", lines)
+
+        # Extract Amount
+        amount = extract_value_below_keyword("AMOUNT", lines)
 
         # Extract Weight (numeric value before "KG")
         weight = extract_value_below_keyword("WEIGHT", lines)
         if weight != "Unknown":
             weight = extract_numeric_before_unit(weight, "KG")
 
-        # Extract Volume (numeric value before "M3")
-        volume = extract_value_below_keyword("VOLUME", lines)
-        if volume != "Unknown":
-            volume = extract_numeric_before_unit(volume, "M3")
-
-        # Extract Packages (numeric value before "CTN")
-        packages = extract_value_below_keyword("PACKAGES", lines)
-        if packages != "Unknown":
-            packages = extract_numeric_before_unit(packages, "CTN")
-
-        # Extract Containers
-        containers = extract_value_below_keyword("CONTAINERS", lines)
-
         return {
             "Shipper Name": shipper,
             "Weight": weight,
-            "Volume": volume,
-            "Order Numbers": order_numbers,
-            "Packages": packages,
-            "Containers": containers,
+            "Order Number": order_number,
+            "Container Number": container_number,
+            "Invoice Number": invoice_number,
+            "Amount": amount,
         }
     except Exception as e:
         st.error(f"Error reading PDF: {e}")
@@ -124,10 +116,10 @@ def main():
                 st.write(f"### Entry {idx}")
                 st.write(f"**Shipper Name:** {entry['Shipper Name']}")
                 st.write(f"**Weight:** {entry['Weight']} KG")
-                st.write(f"**Volume:** {entry['Volume']} M3")
-                st.write(f"**Order Numbers:** {entry['Order Numbers']}")
-                st.write(f"**Packages:** {entry['Packages']} CTN")
-                st.write(f"**Containers:** {entry['Containers']}")
+                st.write(f"**Order Number:** {entry['Order Number']}")
+                st.write(f"**Container Number:** {entry['Container Number']}")
+                st.write(f"**Invoice Number:** {entry['Invoice Number']}")
+                st.write(f"**Amount:** {entry['Amount']}")
         else:
             st.warning("No data extracted. Please check the uploaded files or links.")
 
