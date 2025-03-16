@@ -30,13 +30,13 @@ def extract_invoice_data(pdf_file):
 
         # Extract Weight
         if "WEIGHT" in text:
-            weight_section = text.split("WEIGHT")[1].split("\n")[0].strip()
-            weight = weight_section.split("KG")[0].strip()
+            weight_section = text.split("WEIGHT")[1].split("KG")[0].strip()
+            weight = weight_section.split()[0]  # Get the number before KG
 
         # Extract Volume
         if "VOLUME" in text:
-            volume_section = text.split("VOLUME")[1].split("\n")[0].strip()
-            volume = volume_section.split("M3")[0].strip()
+            volume_section = text.split("VOLUME")[1].split("M3")[0].strip()
+            volume = volume_section.split()[0]  # Get the number before M3
 
         # Extract Order Numbers
         if "ORDER NUMBERS / OWNER'S REFERENCE" in text:
@@ -45,8 +45,8 @@ def extract_invoice_data(pdf_file):
 
         # Extract Packages
         if "PACKAGES" in text:
-            packages_section = text.split("PACKAGES")[1].split("\n")[0].strip()
-            packages = packages_section.split("CTN")[0].strip()
+            packages_section = text.split("PACKAGES")[1].split("CTN")[0].strip()
+            packages = packages_section.split()[0]  # Get the number before CTN
 
         # Extract Containers
         if "CONTAINERS" in text:
