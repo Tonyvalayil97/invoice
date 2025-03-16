@@ -35,10 +35,12 @@ def extract_invoice_data(pdf_file):
                         return lines[i + 1].strip()
             return "Unknown"
 
-        # Function to extract only the numeric part from a string
-        def extract_numeric_part(value):
-            # Remove non-numeric characters (keep digits and decimal points)
-            return ''.join(filter(lambda x: x.isdigit() or x == '.', value))
+        # Function to extract only the numeric part for specific fields
+        def extract_specific_numeric_part(value, unit):
+            # Find the numeric part before the unit (e.g., "KG", "M3", "CTN")
+            if unit in value:
+                return value.split(unit)[0].strip()
+            return value
 
         # Extract Shipper
         shipper = extract_value_below_keyword("SHIPPER", lines)
@@ -49,17 +51,17 @@ def extract_invoice_data(pdf_file):
         # Extract Weight
         weight = extract_value_below_keyword("WEIGHT", lines)
         if weight != "Unknown":
-            weight = extract_numeric_part(weight)  # Extract only the numeric part
+            weight = extract_specific_numeric_part(weight, "KG")  # Extract numeric part before "KG"
 
         # Extract Volume
         volume = extract_value_below_keyword("VOLUME", lines)
         if volume != "Unknown":
-            volume = extract_numeric_part(volume)  # Extract only the numeric part
+            volume = extract_specific_numeric_part(volume, "M3")  # Extract numeric part before "M3"
 
         # Extract Packages
         packages = extract_value_below_keyword("PACKAGES", lines)
         if packages != "Unknown":
-            packages = extract_numeric_part(packages)  # Extract only the numeric part
+            packages = extract_specific_numeric_part(packages, "CTN")  # Extract numeric part before "CTN"
 
         # Extract Containers
         containers = extract_value_below_keyword("CONTAINERS", lines)
