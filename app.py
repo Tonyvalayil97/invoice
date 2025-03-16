@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import requests
 import pdfplumber
 from io import BytesIO
@@ -68,7 +67,7 @@ def extract_invoice_data(pdf_file):
 # Streamlit app
 def main():
     st.title("Invoice Data Extractor")
-    st.write("Upload PDFs from your local folder or via links to extract data and download the results as an Excel file.")
+    st.write("Upload PDFs from your local folder or via links to extract data.")
 
     # Option to upload local files
     uploaded_files = st.file_uploader("Upload PDF files from your local folder", type="pdf", accept_multiple_files=True)
@@ -104,27 +103,18 @@ def main():
                         st.error(f"Failed to download PDF from {link}. Status code: {response.status_code}")
 
         if data:
-            # Create a DataFrame
-            df = pd.DataFrame(data)
-
-            # Save DataFrame to Excel
-            excel_file = BytesIO()
-            with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
-                df.to_excel(writer, index=False, sheet_name="Invoices")
-            excel_file.seek(0)
-
-            # Provide download link for the Excel file
             st.success("Data extraction complete!")
-            st.download_button(
-                label="Download Excel File",
-                data=excel_file,
-                file_name="extracted_invoice_data.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
+            for idx, entry in enumerate(data, start=1):
+                st.write(f"### Entry {idx}")
+                st.write(f"**Shipper Name:** {entry['Shipper Name']}")
+                st.write(f"**Weight:** {entry['Weight']} KG")
+                st.write(f"**Volume:** {entry['Volume']} M3")
+                st.write(f"**Order Numbers:** {entry['Order Numbers']}")
+                st.write(f"**Packages:** {entry['Packages']} CTN")
+                st.write(f"**Containers:** {entry['Containers']}")
         else:
             st.warning("No data extracted. Please check the uploaded files or links.")
 
 # Run the app
 if __name__ == "__main__":
     main()
-
