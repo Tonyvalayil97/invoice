@@ -1,16 +1,20 @@
 import streamlit as st
 import pandas as pd
 import requests
-import PyPDF2
+import pdfplumber
 from io import BytesIO
 
 # Function to extract data from a PDF invoice
 def extract_invoice_data(pdf_file):
     try:
-        pdf_reader = PyPDF2.PdfReader(pdf_file)
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
+        with pdfplumber.open(pdf_file) as pdf:
+            text = ""
+            for page in pdf.pages:
+                text += page.extract_text()
+
+        # Debug: Print the extracted text
+        st.write("Extracted Text:")
+        st.write(text)
 
         # Example parsing logic (customize based on your invoice format)
         shipper = "Unknown"
@@ -19,17 +23,25 @@ def extract_invoice_data(pdf_file):
         final_amount = "Unknown"
         invoice_number = "Unknown"
 
-        # Add your parsing logic here
-        if "Shipper:" in text:
-            shipper = text.split("Shipper:")[1].split("\n")[0].strip()
-        if "Invoice Number:" in text:
-            invoice_number = text.split("Invoice Number:")[1].split("\n")[0].strip()
-        if "Weight:" in text:
-            weight = text.split("Weight:")[1].split("\n")[0].strip()
-        if "Volume:" in text:
-            volume = text.split("Volume:")[1].split("\n")[0].strip()
-        if "Total Amount:" in text:
-            final_amount = text.split("Total Amount:")[1].split("\n")[0].strip()
+        # Extract Shipper
+        if "SHIPPER" in text:
+            shipper = text.split("SHIPPER")[1].split("\n")[0].strip()
+
+        # Extract Invoice Number
+        if "INVOICE -" in text:
+            invoice_number = text.split("INVOICE -")[1].split("\n")[0].strip()
+
+        # Extract Weight
+        if "WEIGHT" in text:
+            weight = text.split("WEIGHT")[1].split("\n")[0].strip()
+
+        # Extract Volume
+        if "VOLUME" in text:
+            volume = text.split("VOLUME")[1].split("\n")[0].strip()
+
+        # Extract Final Amount
+        if "TOTAL CHARGES" in text:
+            final_amount = text.split("TOTAL CHARGES")[1].split("\n")[0].strip()
 
         return {
             "Shipper": shipper,
@@ -38,11 +50,8 @@ def extract_invoice_data(pdf_file):
             "Final Amount": final_amount,
             "Invoice Number": invoice_number,
         }
-    except PyPDF2.errors.PdfReadError:
-        st.error("The uploaded file is not a valid PDF or is corrupted.")
-        return None
     except Exception as e:
-        st.error(f"An unexpected error occurred: {e}")
+        st.error(f"Error reading PDF: {e}")
         return None
 
 # Streamlit app
