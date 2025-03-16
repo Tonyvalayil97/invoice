@@ -15,6 +15,9 @@ def extract_invoice_data(pdf_file):
         st.write("Extracted Text:")
         st.write(text)
 
+        # Split text into lines for easier parsing
+        lines = text.split("\n")
+
         # Initialize variables
         shipper = "Unknown"
         weight = "Unknown"
@@ -23,37 +26,38 @@ def extract_invoice_data(pdf_file):
         packages = "Unknown"
         containers = "Unknown"
 
-        # Extract Shipper Name (E-TEEN COMPANY LIMITED)
-        if "E-TEEN COMPANY LIMITED" in text:
-            shipper = "E-TEEN COMPANY LIMITED"
+        # Function to extract the value below a specific keyword
+        def extract_value_below_keyword(keyword, lines):
+            for i, line in enumerate(lines):
+                if keyword in line:
+                    # Return the next line (value below the keyword)
+                    if i + 1 < len(lines):
+                        return lines[i + 1].strip()
+            return "Unknown"
+
+        # Extract Shipper
+        shipper = extract_value_below_keyword("SHIPPER", lines)
 
         # Extract Order Numbers
-        if "ORDER NUMBERS / OWNER'S REFERENCE" in text:
-            lines = text.split("\n")
-            for i, line in enumerate(lines):
-                if "ORDER NUMBERS / OWNER'S REFERENCE" in line:
-                    order_numbers = lines[i + 1].strip()
-                    break
+        order_numbers = extract_value_below_keyword("ORDER NUMBERS / OWNER'S REFERENCE", lines)
 
         # Extract Weight
-        if "WEIGHT" in text:
-            weight_section = text.split("WEIGHT")[1].split("KG")[0].strip()
-            weight = weight_section.split()[0]  # Get the number before KG
+        weight = extract_value_below_keyword("WEIGHT", lines)
+        if weight != "Unknown":
+            weight = weight.split("KG")[0].strip()  # Remove "KG" if present
 
         # Extract Volume
-        if "VOLUME" in text:
-            volume_section = text.split("VOLUME")[1].split("M3")[0].strip()
-            volume = volume_section.split()[0]  # Get the number before M3
+        volume = extract_value_below_keyword("VOLUME", lines)
+        if volume != "Unknown":
+            volume = volume.split("M3")[0].strip()  # Remove "M3" if present
 
         # Extract Packages
-        if "PACKAGES" in text:
-            packages_section = text.split("PACKAGES")[1].split("CTN")[0].strip()
-            packages = packages_section.split()[0]  # Get the number before CTN
+        packages = extract_value_below_keyword("PACKAGES", lines)
+        if packages != "Unknown":
+            packages = packages.split("CTN")[0].strip()  # Remove "CTN" if present
 
         # Extract Containers
-        if "CONTAINERS" in text:
-            containers_section = text.split("CONTAINERS")[1].split("\n")[0].strip()
-            containers = containers_section
+        containers = extract_value_below_keyword("CONTAINERS", lines)
 
         return {
             "Shipper Name": shipper,
