@@ -7,3 +7,4 @@ xlsxwriter
 pdfplumber
 pytesseract
 pdf2image
+BytesIO
