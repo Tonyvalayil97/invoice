@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import pdfplumber
+import re
 from io import BytesIO
 
 # Function to extract data from a PDF invoice
@@ -29,29 +30,29 @@ def extract_invoice_data(pdf_file):
             shipper = "E-TEEN COMPANY LIMITED"
 
         # Extract Weight
-        if "WEIGHT" in text:
-            weight_section = text.split("WEIGHT")[1].split("KG")[0].strip()
-            weight = weight_section.split()[0]  # Get the number before KG
+        weight_match = re.search(r"WEIGHT\s*(\d+)\s*KG", text)
+        if weight_match:
+            weight = weight_match.group(1)
 
         # Extract Volume
-        if "VOLUME" in text:
-            volume_section = text.split("VOLUME")[1].split("M3")[0].strip()
-            volume = volume_section.split()[0]  # Get the number before M3
+        volume_match = re.search(r"VOLUME\s*(\d+\.\d+)\s*M3", text)
+        if volume_match:
+            volume = volume_match.group(1)
 
         # Extract Order Numbers
-        if "ORDER NUMBERS / OWNER'S REFERENCE" in text:
-            order_numbers_section = text.split("ORDER NUMBERS / OWNER'S REFERENCE")[1].split("\n")[0].strip()
-            order_numbers = order_numbers_section
+        order_numbers_match = re.search(r"ORDER NUMBERS / OWNER'S REFERENCE\s*(\d+)", text)
+        if order_numbers_match:
+            order_numbers = order_numbers_match.group(1)
 
         # Extract Packages
-        if "PACKAGES" in text:
-            packages_section = text.split("PACKAGES")[1].split("CTN")[0].strip()
-            packages = packages_section.split()[0]  # Get the number before CTN
+        packages_match = re.search(r"PACKAGES\s*(\d+)\s*CTN", text)
+        if packages_match:
+            packages = packages_match.group(1)
 
         # Extract Containers
-        if "CONTAINERS" in text:
-            containers_section = text.split("CONTAINERS")[1].split("\n")[0].strip()
-            containers = containers_section
+        containers_match = re.search(r"CONTAINERS\s*([A-Za-z0-9-]+)", text)
+        if containers_match:
+            containers = containers_match.group(1)
 
         return {
             "Shipper Name": shipper,
