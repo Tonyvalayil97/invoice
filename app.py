@@ -3,20 +3,16 @@ import requests
 import pdfplumber
 from io import BytesIO
 
-# Function to extract data from a PDF invoice (specific to page 3)
+# Function to extract data from a PDF invoice
 def extract_invoice_data(pdf_file):
     try:
         with pdfplumber.open(pdf_file) as pdf:
-            # Extract text from page 3 (index 2 since pages are zero-indexed)
-            if len(pdf.pages) >= 3:  # Ensure the PDF has at least 3 pages
-                page = pdf.pages[2]  # Page 3 is index 2
-                text = page.extract_text()
-            else:
-                st.error("The PDF does not have a third page.")
-                return None
+            text = ""
+            for page in pdf.pages:
+                text += page.extract_text()
 
         # Debug: Print the extracted text
-        st.write("Extracted Text from Page 3:")
+        st.write("Extracted Text:")
         st.write(text)
 
         # Split text into lines for easier parsing
@@ -39,11 +35,13 @@ def extract_invoice_data(pdf_file):
                         return lines[i + 1].strip()
             return "Unknown"
 
-        # Function to extract only the numeric part for specific fields
-        def extract_specific_numeric_part(value, unit):
-            # Find the numeric part before the unit (e.g., "KG", "M3", "CTN")
+        # Function to extract the numeric part before a specific unit
+        def extract_numeric_before_unit(value, unit):
             if unit in value:
-                return value.split(unit)[0].strip()
+                # Split the value by the unit and take the part before it
+                part_before_unit = value.split(unit)[0].strip()
+                # Remove any non-numeric characters (keep digits and decimal points)
+                return ''.join(filter(lambda x: x.isdigit() or x == '.', part_before_unit))
             return value
 
         # Extract Shipper
@@ -52,20 +50,20 @@ def extract_invoice_data(pdf_file):
         # Extract Order Numbers
         order_numbers = extract_value_below_keyword("ORDER NUMBERS / OWNER'S REFERENCE", lines)
 
-        # Extract Weight
+        # Extract Weight (numeric value before "KG")
         weight = extract_value_below_keyword("WEIGHT", lines)
         if weight != "Unknown":
-            weight = extract_specific_numeric_part(weight, "KG")  # Extract numeric part before "KG"
+            weight = extract_numeric_before_unit(weight, "KG")
 
-        # Extract Volume
+        # Extract Volume (numeric value before "M3")
         volume = extract_value_below_keyword("VOLUME", lines)
         if volume != "Unknown":
-            volume = extract_specific_numeric_part(volume, "M3")  # Extract numeric part before "M3"
+            volume = extract_numeric_before_unit(volume, "M3")
 
-        # Extract Packages
+        # Extract Packages (numeric value before "CTN")
         packages = extract_value_below_keyword("PACKAGES", lines)
         if packages != "Unknown":
-            packages = extract_specific_numeric_part(packages, "CTN")  # Extract numeric part before "CTN"
+            packages = extract_numeric_before_unit(packages, "CTN")
 
         # Extract Containers
         containers = extract_value_below_keyword("CONTAINERS", lines)
@@ -85,7 +83,7 @@ def extract_invoice_data(pdf_file):
 # Streamlit app
 def main():
     st.title("Invoice Data Extractor")
-    st.write("Upload PDFs from your local folder or via links to extract data from page 3.")
+    st.write("Upload PDFs from your local folder or via links to extract data.")
 
     # Option to upload local files
     uploaded_files = st.file_uploader("Upload PDF files from your local folder", type="pdf", accept_multiple_files=True)
