@@ -16,7 +16,7 @@ def extract_invoice_data(pdf_file):
         st.write("Extracted Text:")
         st.write(text)
 
-        # Example parsing logic (customize based on your invoice format)
+        # Initialize variables
         shipper = "Unknown"
         weight = "Unknown"
         volume = "Unknown"
@@ -25,7 +25,8 @@ def extract_invoice_data(pdf_file):
 
         # Extract Shipper
         if "SHIPPER" in text:
-            shipper = text.split("SHIPPER")[1].split("\n")[0].strip()
+            shipper_section = text.split("SHIPPER")[1].split("\n")[0].strip()
+            shipper = shipper_section.split("CONSIGNEE")[0].strip()
 
         # Extract Invoice Number
         if "INVOICE -" in text:
@@ -33,15 +34,18 @@ def extract_invoice_data(pdf_file):
 
         # Extract Weight
         if "WEIGHT" in text:
-            weight = text.split("WEIGHT")[1].split("\n")[0].strip()
+            weight_section = text.split("WEIGHT")[1].split("\n")[0].strip()
+            weight = weight_section.split("KG")[0].strip()
 
         # Extract Volume
         if "VOLUME" in text:
-            volume = text.split("VOLUME")[1].split("\n")[0].strip()
+            volume_section = text.split("VOLUME")[1].split("\n")[0].strip()
+            volume = volume_section.split("M3")[0].strip()
 
         # Extract Final Amount
         if "TOTAL CHARGES" in text:
-            final_amount = text.split("TOTAL CHARGES")[1].split("\n")[0].strip()
+            final_amount_section = text.split("TOTAL CHARGES")[1].split("\n")[0].strip()
+            final_amount = final_amount_section.split("USD")[0].strip()
 
         return {
             "Shipper": shipper,
