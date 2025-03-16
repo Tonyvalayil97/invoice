@@ -8,3 +8,4 @@ pdfplumber
 pytesseract
 pdf2image
 pdf2image
+re
