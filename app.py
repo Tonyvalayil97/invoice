@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import pdfplumber
 from io import BytesIO
+import re
 
 # Function to extract data from a PDF invoice
 def extract_invoice_data(pdf_file):
@@ -49,6 +50,14 @@ def extract_invoice_data(pdf_file):
                 return ''.join(filter(lambda x: x.isdigit() or x == '.', part_before_unit))
             return value
 
+        # Function to extract invoice number starting with "SY:"
+        def extract_sy_invoice_number(lines):
+            for line in lines:
+                match = re.search(r'SY:\s*(\d+)', line)
+                if match:
+                    return match.group(1)
+            return "Unknown"
+
         # Extract Shipper Name from page 1
         shipper = extract_value_below_keyword("SHIPPER", lines_page_1)
 
@@ -59,7 +68,7 @@ def extract_invoice_data(pdf_file):
         container_number = extract_value_below_keyword("CONTAINERS", lines_page_1)
 
         # Extract Invoice Number from page 1
-        invoice_number = extract_value_below_keyword("INVOICE NO", lines_page_1)
+        invoice_number = extract_sy_invoice_number(lines_page_1)
 
         # Extract Weight (numeric value before "KG") from page 1
         weight = extract_value_below_keyword("WEIGHT", lines_page_1)
@@ -139,4 +148,3 @@ def main():
 # Run the app
 if __name__ == "__main__":
     main()
-
