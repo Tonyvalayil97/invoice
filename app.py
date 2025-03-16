@@ -27,6 +27,14 @@ def extract_invoice_data(pdf_file):
         if "E-TEEN COMPANY LIMITED" in text:
             shipper = "E-TEEN COMPANY LIMITED"
 
+        # Extract Order Numbers
+        if "ORDER NUMBERS / OWNER'S REFERENCE" in text:
+            lines = text.split("\n")
+            for i, line in enumerate(lines):
+                if "ORDER NUMBERS / OWNER'S REFERENCE" in line:
+                    order_numbers = lines[i + 1].strip()
+                    break
+
         # Extract Weight
         if "WEIGHT" in text:
             weight_section = text.split("WEIGHT")[1].split("KG")[0].strip()
@@ -36,11 +44,6 @@ def extract_invoice_data(pdf_file):
         if "VOLUME" in text:
             volume_section = text.split("VOLUME")[1].split("M3")[0].strip()
             volume = volume_section.split()[0]  # Get the number before M3
-
-        # Extract Order Numbers
-        if "ORDER NUMBERS / OWNER'S REFERENCE" in text:
-            order_numbers_section = text.split("ORDER NUMBERS / OWNER'S REFERENCE")[1].split("\n")[0].strip()
-            order_numbers = order_numbers_section
 
         # Extract Packages
         if "PACKAGES" in text:
