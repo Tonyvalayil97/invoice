@@ -7,12 +7,21 @@ from io import BytesIO
 def extract_invoice_data(pdf_file):
     try:
         with pdfplumber.open(pdf_file) as pdf:
-            text = ""
-            for page in pdf.pages:
-                text += page.extract_text()
+            text_page_1 = ""
+            text_page_2 = ""
+            
+            # Extract text from page 1 for the general details
+            if len(pdf.pages) > 0:
+                text_page_1 = pdf.pages[0].extract_text()
+                
+            # Extract text from page 2 for the "Total USD" amount
+            if len(pdf.pages) > 1:
+                text_page_2 = pdf.pages[1].extract_text()
 
-        # Split text into lines for easier parsing
-        lines = text.split("\n")
+        # Split page 1 text into lines for easier parsing
+        lines_page_1 = text_page_1.split("\n")
+        # Split page 2 text into lines to extract "Total USD" amount
+        lines_page_2 = text_page_2.split("\n")
 
         # Initialize variables
         shipper = "Unknown"
@@ -40,25 +49,29 @@ def extract_invoice_data(pdf_file):
                 return ''.join(filter(lambda x: x.isdigit() or x == '.', part_before_unit))
             return value
 
-        # Extract Shipper Name
-        shipper = extract_value_below_keyword("SHIPPER", lines)
+        # Extract Shipper Name from page 1
+        shipper = extract_value_below_keyword("SHIPPER", lines_page_1)
 
-        # Extract Order Number
-        order_number = extract_value_below_keyword("ORDER NUMBER", lines)
+        # Extract Order Number from page 1
+        order_number = extract_value_below_keyword("ORDER NUMBER", lines_page_1)
 
-        # Extract Container Number
-        container_number = extract_value_below_keyword("CONTAINER NO", lines)
+        # Extract Container Number from page 1
+        container_number = extract_value_below_keyword("CONTAINERS", lines_page_1)
 
-        # Extract Invoice Number
-        invoice_number = extract_value_below_keyword("INVOICE NO", lines)
+        # Extract Invoice Number from page 1
+        invoice_number = extract_value_below_keyword("INVOICE NO", lines_page_1)
 
-        # Extract Amount
-        amount = extract_value_below_keyword("AMOUNT", lines)
-
-        # Extract Weight (numeric value before "KG")
-        weight = extract_value_below_keyword("WEIGHT", lines)
+        # Extract Weight (numeric value before "KG") from page 1
+        weight = extract_value_below_keyword("WEIGHT", lines_page_1)
         if weight != "Unknown":
             weight = extract_numeric_before_unit(weight, "KG")
+
+        # Extract Amount from page 2 next to "Total USD"
+        for line in lines_page_2:
+            if "Total USD" in line:
+                # Extract the amount from this line by splitting at "Total USD" and cleaning up the value
+                amount = line.split("Total USD")[-1].strip()
+                break
 
         return {
             "Shipper Name": shipper,
@@ -119,10 +132,11 @@ def main():
                 st.write(f"**Order Number:** {entry['Order Number']}")
                 st.write(f"**Container Number:** {entry['Container Number']}")
                 st.write(f"**Invoice Number:** {entry['Invoice Number']}")
-                st.write(f"**Amount:** {entry['Amount']}")
+                st.write(f"**Amount:** {entry['Amount']} USD")
         else:
             st.warning("No data extracted. Please check the uploaded files or links.")
 
 # Run the app
 if __name__ == "__main__":
     main()
+
